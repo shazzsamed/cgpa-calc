@@ -31,7 +31,8 @@ def get_semester_data(driver):
             #Extract course code and grade
             course_code = columns[1].text.strip()
             grade = columns[11].text.strip()
-            if not grade:
+            if not grade or grade in ['RA','U','SA']:
+                print(f"Skipping {course_code}")
                 continue
 
             #GPA Calculation
@@ -44,7 +45,7 @@ def get_semester_data(driver):
             if grade in GRADE_POINTS:
                 courses[course_code] = (credits2019[course_code],grade)
 
-    gpa = round(gpa / sem_credits, 2) if sem_credits > 0 else 0
+    gpa = round(float(gpa) / float(sem_credits), 2) if sem_credits > 0 else 0
     print(f"🎯 GPA: {gpa}\n")
 
     return courses
@@ -54,7 +55,7 @@ def calculate_cgpa(all_courses):
     total_credits = sum(credit for credit, _ in all_courses.values())
     weighted_sum = sum(GRADE_POINTS[grade] * credit for credit, grade in all_courses.values())
 
-    return round(weighted_sum / total_credits, 2) if total_credits > 0 else 0
+    return round(float(weighted_sum) / float(total_credits), 2) if total_credits > 0 else 0
 
 def main():
     driver = webdriver.Chrome()
