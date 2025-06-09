@@ -6,11 +6,10 @@ from selenium.webdriver.support.ui import Select
 from bs4 import BeautifulSoup
 from credits import credits2019
 
-GRADE_POINTS = {
-    "O": 10, "A+": 9, "A": 8, "B+": 7, "B": 6, "C": 5, "RA": 0
-}
+GRADE_POINTS = {"O": 10, "A+": 9, "A": 8, "B+": 7, "B": 6, "C": 5, "U": 0}
 CGPA = 0
 TOTAL_CREDITS = 0
+
 
 def get_semester_data(driver):
     """Extracts course data from the current semester page."""
@@ -21,40 +20,44 @@ def get_semester_data(driver):
     page_source = driver.page_source
     soup = BeautifulSoup(page_source, "html.parser")
     table = soup.find("tbody", {"id": "subjects"})
-    courses = {} 
+    courses = {}
     gpa = 0
     sem_credits = 0
 
     for row in table.find_all("tr"):
         columns = row.find_all("td")
         if len(columns) >= 12:
-            #Extract course code and grade
+            # Extract course code and grade
             course_code = columns[1].text.strip()
             grade = columns[11].text.strip()
             if not grade:
                 continue
 
-            #GPA Calculation
+            # GPA Calculation
             credits = credits2019[course_code]
             sem_credits += credits
             gpa += GRADE_POINTS[grade] * credits
 
-            #Add to courses
+            # Add to courses
             print(course_code, grade)
             if grade in GRADE_POINTS:
-                courses[course_code] = (credits2019[course_code],grade)
+                courses[course_code] = (credits2019[course_code], grade)
 
     gpa = round(gpa / sem_credits, 2) if sem_credits > 0 else 0
     print(f"🎯 GPA: {gpa}\n")
 
     return courses
 
+
 def calculate_cgpa(all_courses):
     """Calculates the CGPA."""
     total_credits = sum(credit for credit, _ in all_courses.values())
-    weighted_sum = sum(GRADE_POINTS[grade] * credit for credit, grade in all_courses.values())
+    weighted_sum = sum(
+        GRADE_POINTS[grade] * credit for credit, grade in all_courses.values()
+    )
 
     return round(weighted_sum / total_credits, 2) if total_credits > 0 else 0
+
 
 def main():
     driver = webdriver.Chrome()
@@ -71,7 +74,7 @@ def main():
         session_value = option.get_attribute("value")
         print(f"🔄 Fetching Semester: {option.text}")
         select_element.select_by_value(session_value)
-        
+
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "#subjects tr"))
         )
@@ -84,6 +87,7 @@ def main():
     driver.quit()
     final_cgpa = calculate_cgpa(all_courses)
     print(f"\n🎯 Final CGPA: {final_cgpa}")
+
 
 if __name__ == "__main__":
     main()
